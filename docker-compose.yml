@@ -9,5 +9,5 @@ mysql:
     env_file:
       - "./.env"
     environment:
-      - MYSQL_RANDOM_ROOT_PASSWORD=True
+      - MYSQL_DATABASE=test
       - MYSQL_USER=admin
