@@ -4,10 +4,10 @@ mysql:
     restart: unless-stopped
     ports:
       - "3306:3306"
-    volumes:
-      - ./mysql:/var/lib/mysql
-    env_file:
-      - "./.env"
     environment:
       - MYSQL_DATABASE=test
+      - MYSQL_ROOT_PASSWORD
       - MYSQL_USER=admin
+      - MYSQL_PASSWORD
+    volumes:
+      - ./mysql:/var/lib/mysql
