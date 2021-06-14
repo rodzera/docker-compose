@@ -1,5 +1,7 @@
-mysql:
-    image: mysql:8.0
+version: "3.9"
+services:
+  mysql:
+    image: mysql
     container_name: mysql_docker
     restart: unless-stopped
     ports:
@@ -10,4 +12,6 @@ mysql:
       - MYSQL_USER=admin
       - MYSQL_PASSWORD
     volumes:
-      - mysql:/var/lib/mysql
+      - mysql-data:/var/lib/mysql
+volumes:
+  mysql-data:
