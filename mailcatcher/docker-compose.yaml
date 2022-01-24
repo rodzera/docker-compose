@@ -1,0 +1,10 @@
+openldap:
+  image: schickling/mailcatcher
+  container_name: mailcatcher
+  restart: unless-stopped
+  ports:
+   - "1080:1080"
+   - "25:1025"
+  container_name: mailcatcher
+  volumes:
+    - data-volume:/var/lib/mailcatcher

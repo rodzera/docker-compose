@@ -1,0 +1,13 @@
+openldap:
+  image: osixia/openldap
+  container_name: openldap
+  restart: unless-stopped
+  ports:
+   - "389:389"
+  environment:
+    - LDAP_DOMAIN=sec4you.ldap
+    - LDAP_ADMIN_USERNAME=admin
+    - LDAP_ADMIN_PASSWORD=passwd
+    - LDAP_ORGANISATION=sec4you
+  volumes:
+    - data-volume:/var/lib/openldap
