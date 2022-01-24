@@ -1,0 +1,17 @@
+version: "3.9"
+services:
+  mysql:
+    image: mysql
+    container_name: mysql
+    restart: unless-stopped
+    ports:
+      - "3306:3306"
+    environment:
+      - MYSQL_DATABASE=test
+      - MYSQL_RANDOM_ROOT_PASSWORD=true
+      - MYSQL_USER=admin
+      - MYSQL_PASSWORD=admin
+    volumes:
+      - mysql-data:/var/lib/mysql
+volumes:
+  mysql-data:
