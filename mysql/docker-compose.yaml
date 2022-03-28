@@ -1,4 +1,4 @@
-version: "3.9"
+version: "3.8"
 services:
   mysql:
     image: mysql
@@ -10,8 +10,8 @@ services:
       - MYSQL_DATABASE=test
       - MYSQL_RANDOM_ROOT_PASSWORD=true
       - MYSQL_USER=admin
-      - MYSQL_PASSWORD=admin
+      - MYSQL_PASSWORD
     volumes:
       - mysql-data:/var/lib/mysql
-volumes:
-  mysql-data:
+
+
