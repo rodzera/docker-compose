@@ -5,13 +5,15 @@ services:
     container_name: openldap
     restart: unless-stopped
     environment:
-      - LDAP_DOMAIN=sec4you.ldap
-      - LDAP_ADMIN_USERNAME=admin
-      - LDAP_ADMIN_PASSWORD
-      - LDAP_ORGANISATION=sec4you
+      LDAP_DOMAIN: example.ldap
+      LDAP_ORGANISATION: example
+      LDAP_ADMIN_USERNAME: admin
+      LDAP_ADMIN_PASSWORD: ${LDAP_ADMIN_PASSWORD}
+      # LDAP_BASE_DN: ""
     ports:
     - "389:389"
     volumes:
-      - openldap:/var/lib/openldap
+      - ./data:/var/lib/ldap
+      - ./config:/etc/ldap/slapd.d
 volumes:
   openldap:

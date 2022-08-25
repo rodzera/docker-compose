@@ -1,39 +1,47 @@
 version: "3.9"
 services:
-  strapi:
+  strapi-server:
     image: strapi/strapi:latest
-    container_name: strapi
+    container_name: strapi-server
     restart: unless-stopped
+    depends_on:
+      - strapi-database
     environment:
-      - DATABASE_CLIENT=postgres
-      - DATABASE_NAME=cmsdb
-      - DATABASE_HOST=postgres
-      - DATABASE_PORT=5432
-      - DATABASE_USERNAME=admin
-      - DATABASE_PASSWORD
+      DATABASE_CLIENT: postgres
+      DATABASE_HOST: strapi-database
+      DATABASE_NAME: strapi
+      DATABASE_PORT: 5432
+      DATABASE_USERNAME: admin
+      DATABASE_PASSWORD: ${DATABASE_PASSWORD}
     ports:
       - "1337:1337"
     volumes:
-      - /strapi:/srv/app
+      - ./strapi:/srv/app
     networks:
-      - default
-    depends_on:
-      - postgres
-  postgres:
+      strapi:
+        aliases:
+          - strapi-server
+
+  strapi-database:
     image: postgres:latest
-    container_name: cmsdb
+    container_name: strapi-database
     restart: unless-stopped
     environment:
-      - POSTGRES_DB=cmsdb
-      - POSTGRES_USER=admin
-      - POSTGRES_PASSWORD
+      POSTGRES_DB: strapi
+      POSTGRES_USER: admin
+      POSTGRES_PASSWORD: ${DATABASE_PASSWORD}
     ports:
       - "5432:5432"
     volumes: 
-      - postgres:/var/lib/postgresql
+      - ./data:/var/lib/postgresql
+    networks:
+      strapi:
+        aliases:
+          - strapi-database
+
 volumes:
-  strapi:
-  postgres:
+  strapi-server:
+  strapi-database:
+
 networks:
-  default:
-      driver: bridge
+  strapi:

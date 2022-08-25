@@ -8,6 +8,6 @@ services:
       - "1080:1080"
       - "25:1025"
     volumes:
-      - mailcatcher:/var/lib/mailcatcher
+      - ./data:/var/lib/mailcatcher
 volumes:
   mailcatcher:

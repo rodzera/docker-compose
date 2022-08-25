@@ -1,2 +1,6 @@
 **/.env
 **/kong.yaml
+
+**/data/
+**/config/
+**/strapi
