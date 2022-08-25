@@ -1,0 +1,37 @@
+# Sample of an decK config file
+# Rename this file to kong.yaml
+# Use deck dump to export a new config file
+# Use deck sync to import a config file
+# Use deck reset to delete all kong config
+
+_format_version: "1.1"
+services:
+- connect_timeout: 60000
+  enabled: true
+  host: fake-server
+  name: route
+  path: /api/route
+  port: 8080
+  protocol: http
+  read_timeout: 60000
+  retries: 5
+  routes:
+  - https_redirect_status_code: 426
+    methods:
+    - GET
+    - POST
+    - PUT
+    - DELETE
+    name: route
+    path_handling: v1
+    paths:
+    - /fake/route
+    preserve_host: false
+    protocols:
+    - http
+    - https
+    regex_priority: 0
+    request_buffering: true
+    response_buffering: true
+    strip_path: true
+  write_timeout: 60000
