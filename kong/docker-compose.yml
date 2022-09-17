@@ -23,7 +23,6 @@ services:
     image: kong:latest
     container_name: kong-migrations
     command: kong migrations bootstrap
-    restart: unless-stopped
     depends_on:
       - kong-database
     environment:
@@ -36,7 +35,7 @@ services:
       kong-net:
         aliases:
         - kong-migrations
-
+    restart: unless-stopped
   kong-migrations-up:
     image: kong:latest
     container_name: kong-migrations-up
@@ -60,10 +59,8 @@ services:
   #######################################
   kong:
     image: kong:latest
-    #build: ./config
     user: kong
     container_name: kong
-    restart: unless-stopped
     environment:
       KONG_DATABASE: postgres
       KONG_PG_DATABASE: kong
@@ -78,7 +75,7 @@ services:
       KONG_PROXY_ACCESS_LOG: /dev/stdout
       KONG_PROXY_ERROR_LOG: /dev/stderr
       KONG_PREFIX: ${KONG_PREFIX:-/var/run/kong}
-      #KONG_PLUGINS: oidc, request-transformer, jwt
+      #KONG_PLUGINS: request-transformer, jwt
     networks:
       kong-net:
         aliases:
@@ -93,6 +90,7 @@ services:
       interval: 10s
       timeout: 10s
       retries: 10
+    restart: unless-stopped
     read_only: true
     volumes:
       - kong_prefix_vol:${KONG_PREFIX:-/var/run/kong}
@@ -106,7 +104,6 @@ services:
   kong-database:
     image: postgres:9.6
     container_name: kong-database
-    restart: unless-stopped
     environment:
       POSTGRES_DB: kong
       POSTGRES_USER: kong
@@ -116,6 +113,7 @@ services:
       interval: 30s
       timeout: 30s
       retries: 3
+    restart: unless-stopped
     stdin_open: true
     tty: true
     networks:
@@ -156,10 +154,14 @@ services:
     container_name: deck
     environment:
       DECK_KONG_ADDR: http://kong:8001
-      DECK_EX_VAR: ${DECK_EX_VAR}
+      DECK_HOST: ${DECK_HOST}
+      DECK_PORT: ${DECK_PORT}
+      DECK_PROTOCOL: http
+      DECK_ROUTE: ${DECK_ROUTE}
     depends_on:
       - kong
     entrypoint: deck ping
+    #entrypoint: deck validate -s /mnt/deck/kong.yaml
     #entrypoint: deck dump --yes -o /mnt/deck/kong.yaml
     #entrypoint: deck sync -s /mnt/deck/kong.yaml
     #entrypoint: deck reset -f
