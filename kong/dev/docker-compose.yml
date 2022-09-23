@@ -1,0 +1,200 @@
+version: "3.9"
+
+volumes:
+  kong_data: {}
+  kong_prefix_vol:
+    driver_opts:
+     type: tmpfs
+     device: tmpfs
+  kong_tmp_vol:
+    driver_opts:
+     type: tmpfs
+     device: tmpfs
+
+networks:
+  kong-net:
+
+services:
+  #######################################
+  # Kong database migration
+  #######################################
+  kong-migrations:
+    image: kong:latest
+    container_name: kong-migrations
+    command: kong migrations bootstrap
+    depends_on:
+      kong-database:
+        condition: service_healthy
+    environment:
+      KONG_DATABASE: postgres
+      KONG_PG_DATABASE: kong
+      KONG_PG_HOST: kong-database
+      KONG_PG_USER: kong
+      KONG_PG_PASSWORD: ${POSTGRES_PASSWORD}
+    networks:
+      - kong-net
+    restart: unless-stopped
+    
+  kong-migrations-up:
+    image: kong:latest
+    container_name: kong-migrations-up
+    command: kong migrations up && kong migrations finish
+    depends_on:
+      kong-database:
+        condition: service_healthy
+    environment:
+      KONG_DATABASE: postgres
+      KONG_PG_DATABASE: kong
+      KONG_PG_HOST: kong-database
+      KONG_PG_USER: kong
+      KONG_PG_PASSWORD: ${POSTGRES_PASSWORD}
+    networks:
+      - kong-net
+    restart: unless-stopped
+
+  #######################################
+  # Kong: The API Gateway
+  #######################################
+  kong:
+    image: kong:latest
+    user: kong
+    container_name: kong
+    environment:
+      KONG_DATABASE: postgres
+      KONG_PG_DATABASE: kong
+      KONG_PG_HOST: kong-database
+      KONG_PG_USER: kong
+      KONG_PG_PASSWORD: ${POSTGRES_PASSWORD}
+      KONG_ADMIN_ACCESS_LOG: /dev/stdout
+      KONG_ADMIN_ERROR_LOG: /dev/stderr
+      KONG_PROXY_LISTEN: 0.0.0.0:8000
+      KONG_ADMIN_LISTEN: 0.0.0.0:8001
+      KONG_PROXY_LISTEN_SSL: 0.0.0.0:8443
+      KONG_ADMIN_LISTEN_SSL: 0.0.0.0:8444
+      KONG_PROXY_ACCESS_LOG: /dev/stdout
+      KONG_PROXY_ERROR_LOG: /dev/stderr
+      KONG_PREFIX: ${KONG_PREFIX:-/var/run/kong}
+      # KONG_PLUGINS: request-transformer, jwt, rate-limiting, request-size-limiting
+    networks:
+      kong-net:
+        aliases:
+          - kong
+    ports:
+      - "8000:8000"
+      - "8001:8001"
+      - "8443:8443"
+      - "8444:8444"
+    healthcheck:
+      test: [ "CMD", "kong", "health" ]
+      interval: 10s
+      timeout: 10s
+      retries: 10
+    restart: unless-stopped
+    depends_on:
+      - kong-migrations-up
+    read_only: true
+    volumes:
+      - kong_prefix_vol:${KONG_PREFIX:-/var/run/kong}
+      - kong_tmp_vol:/tmp
+    security_opt:
+      - no-new-privileges
+
+  #######################################
+  # Kong database: Postgres
+  #######################################
+  kong-database:
+    image: postgres:9.6
+    container_name: kong-database
+    environment:
+      POSTGRES_DB: kong
+      POSTGRES_USER: kong
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    healthcheck:
+      test: [ "CMD", "pg_isready", "-U", "kong" ]
+      interval: 30s
+      timeout: 30s
+      retries: 3
+    restart: unless-stopped
+    networks:
+      kong-net:
+        aliases:
+          - kong-database
+    volumes:
+      - ./kong_data:/var/lib/postgresql/data
+
+  #######################################
+  # Konga: Kong GUI
+  #######################################
+  konga:
+    image: pantsel/konga:next
+    restart: unless-stopped
+    environment:
+      DB_ADAPTER: postgres
+      DB_HOST: konga-database
+      DB_DATABASE: konga
+      DB_USER: konga
+      DB_PASSWORD: ${POSTGRES_PASSWORD}
+      KONGA_SEED_USER_DATA_SOURCE_FILE: /app/konga_user_seed.js
+      TOKEN_SECRET: ${TOKEN_SECRET}
+      NODE_ENV: development
+    depends_on:
+      konga-database:
+        condition: service_healthy
+    ports:
+      - "1337:1337"
+    volumes:
+      - ../config/konga_user_seed.js:/app/konga_user_seed.js
+    networks:
+      kong-net:
+        aliases:
+          - konga
+
+  #######################################
+  # Konga database: Postgres
+  #######################################
+  konga-database:
+    image: postgres:9.6
+    container_name: konga-database
+    environment:
+      POSTGRES_DB: konga
+      POSTGRES_USER: konga
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    healthcheck:
+      test: [ "CMD", "pg_isready", "-U", "konga" ]
+      interval: 30s
+      timeout: 30s
+      retries: 3
+    restart: unless-stopped
+    networks:
+      kong-net:
+        aliases:
+          - konga-database
+    volumes:
+      - ./konga_data:/var/lib/postgresql/data
+
+  #############################################
+  # Deck: Declarative configuration for Kong
+  #############################################
+  deck:
+    image: kong/deck:latest
+    container_name: deck
+    environment:
+      DECK_KONG_ADDR: http://kong:8001
+      DECK_HOST: ${DECK_HOST}
+      DECK_PORT: ${DECK_PORT}
+      DECK_PROTOCOL: http
+      DECK_ROUTE: ${DECK_ROUTE}
+    entrypoint: deck ping
+    #entrypoint: deck validate -s /mnt/deck/kong.yaml
+    #entrypoint: deck sync -s /mnt/deck/kong.yaml
+    #entrypoint: deck dump --yes -o /mnt/deck/kong.yaml
+    #entrypoint: deck reset -f
+    depends_on:
+      kong:
+        condition: service_healthy
+    volumes:
+      - ../config/kong.yaml:/mnt/deck/
+    networks:
+      kong-net:
+        aliases:
+          - deck
