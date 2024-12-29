@@ -1,0 +1,12 @@
+services:
+  redis:
+    image: redis:latest
+    container_name: redis
+    restart: unless-stopped
+    environment:
+      REDIS_PASS: ${REDIS_PASS}
+    command: sh -c 'redis-server --requirepass "$REDIS_PASS"'
+    ports:
+      - "6379:6379"
+    volumes:
+      - ./data:/data

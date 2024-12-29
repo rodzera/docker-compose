@@ -1,4 +1,3 @@
-version: "3.9"
 services:
   strapi-server:
     image: strapi/strapi:latest
