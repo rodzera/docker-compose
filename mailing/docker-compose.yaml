@@ -1,0 +1,71 @@
+networks:
+  mailing:
+    name: mailing
+    ipam:
+      config:
+        - subnet: 172.19.0.0/24
+
+services:
+  mailcatcher:
+    image: schickling/mailcatcher:latest
+    container_name: mailcatcher
+    restart: unless-stopped
+    ports:
+      - "1025:1025"
+      - "1080:1080"
+    networks:
+      mailing:
+        aliases:
+          - mailcatcher
+        ipv4_address: 172.19.0.2
+  postfix:
+    image: boky/postfix:4.4.0
+    container_name: postfix
+    restart: unless-stopped
+    environment:
+      # core
+      - ALLOWED_SENDER_DOMAINS=*
+      - POSTFIX_inet_protocols=ipv4
+      - POSTFIX_mydomain=postfix.mailing.local
+      # incoming mail
+      - POSTFIX_smtpd_tls_received_header=yes
+      - POSTFIX_smtpd_tls_security_level=encrypt
+      - MAIL_CERT_FILE=/etc/ssl/certs/postfix-cert.pem
+      - MAIL_KEY_FILE=/etc/ssl/private/postfix-key.pem
+      # access control
+      - POSTFIX_sender_restrictions=permit_mynetworks,reject_non_fqdn_sender,reject
+      - POSTFIX_smtpd_recipient_restrictions=permit_mynetworks,reject_non_fqdn_sender,reject
+      - POSTFIX_smtpd_helo_restrictions=permit_mynetworks,reject_non_fqdn_sender,reject_invalid_helo_hostname,permit
+      - POSTFIX_mynetworks=127.0.0.0/8,172.19.0.0/24
+      # outgoing mail
+      - POSTFIX_relayhost=[mailcatcher]:1025
+      - POSTFIX_smtp_tls_security_level=none 
+    ports:
+      - "25:25"    # smtp (with starttls)
+      - "587:587"  # submission (with starttls)
+    volumes:
+      - /path/to/mailing.pem:/etc/ssl/certs/postfix-cert.pem:ro
+      - /path/to/mailing-key.pem:/etc/ssl/private/postfix-key.pem:ro
+    networks:
+      mailing:
+        aliases:
+          - postfix
+        ipv4_address: 172.19.0.3
+  stunnel:
+    image: dweomer/stunnel
+    container_name: stunnel
+    restart: unless-stopped
+    environment:
+      - STUNNEL_SERVICE=smtps
+      - STUNNEL_ACCEPT=465
+      - STUNNEL_CONNECT=mailcatcher:1025
+    ports:
+      - "465:465" # smtps
+    volumes:
+      - /path/to/mailing.pem:/etc/stunnel/stunnel.pem:ro
+      - /path/to/mailing-key.pem:/etc/stunnel/stunnel.key:ro
+    networks:
+      mailing:
+        aliases:
+          - stunnel
+        ipv4_address: 172.19.0.4

@@ -1,8 +1,0 @@
-services:
-  mailcatcher:
-    image: schickling/mailcatcher:latest
-    container_name: mailcatcher
-    restart: unless-stopped
-    ports:
-      - "1080:1080"
-      - "1025:1025"
