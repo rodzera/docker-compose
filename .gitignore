@@ -1,6 +1,6 @@
-**/.env
-**/kong.yaml
-**/konga_user_seed.js
+.env
+kong.yaml
+konga_user_seed.js
 
-**/*data/
-**/strapi/
+*data/
+strapi/
